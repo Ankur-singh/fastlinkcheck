@@ -29,7 +29,7 @@ def get_links(fn):
     h.feed(Path(fn).read_text())
     return L(h.found)
 
-# Cell
+# update
 def _local_url(u, root, host, fname):
     "Change url `u` to local path if it is a local link"
     fpath = Path(fname).parent
@@ -39,6 +39,9 @@ def _local_url(u, root, host, fname):
         if host and u.startswith(o+host): u,islocal = remove_prefix(u, o+host),True
     # remove params, querystring, and fragment
     p = list(urlparse(u))[:5]+['']
+    # remove `pathto` text
+    if 'pathto' in p[2]: 
+        p[2] = p[2].replace("{{ pathto('_static/", '')[:-8]
     # local prefix, or no protocol or host
     if islocal or (not p[0] and not p[1]):
         u = p[2]
@@ -79,6 +82,7 @@ def broken_local(links, ignore_paths=None):
     ignore_paths = setify(ignore_paths)
     return L(o for o in links if isinstance(o,Path) and o not in ignore_paths and not html_exists(o))
 
+# update
 def urlcheck_(url, timeout=200):
     if not url: return True
     try:
