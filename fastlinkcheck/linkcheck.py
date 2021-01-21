@@ -8,6 +8,9 @@ from html.parser import HTMLParser
 from urllib.parse import urlparse,urlunparse
 from fastcore.script import SCRIPT_INFO
 import sys
+import socket
+from http.client import InvalidURL
+from urllib.error import HTTPError,URLError
 
 # Cell
 class _HTMLParseAttrs(HTMLParser):
@@ -76,12 +79,21 @@ def broken_local(links, ignore_paths=None):
     ignore_paths = setify(ignore_paths)
     return L(o for o in links if isinstance(o,Path) and o not in ignore_paths and not html_exists(o))
 
+def urlcheck_(url, timeout=200):
+    if not url: return True
+    try:
+        u = urlopen(url)
+        return u.status<400
+    except URLError: return False
+    except socket.timeout: return False
+    except InvalidURL: return False
+
 # Cell
 def broken_urls(links, ignore_urls=None):
     "List of items in keys of `links` that are URLs that return a failure status code"
     ignore_urls = setify(ignore_urls)
     its = L(o for o in links if isinstance(o, str) and o not in ignore_urls)
-    working_urls = parallel(urlcheck, its, n_workers=32, threadpool=True)
+    working_urls = parallel(urlcheck_, its, n_workers=32, threadpool=True)
     return L(o for o,p in zip(its,working_urls) if not p)
 
 # Cell
